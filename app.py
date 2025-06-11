@@ -20,10 +20,12 @@ st.markdown("""
 st.image("https://media.tenor.com/xOb4uwv-VV8AAAAC/var-checking.gif", use_container_width=True)
 
 st.markdown("# ⚽ Bienvenido a VARGENTO")
-st.markdown("La plataforma inteligente para asistir en decisiones arbitrales mediante IA y análisis de jugadas.")
-st.markdown("👉 Subí una imagen, video o link de YouTube de la jugada.  
-👉 Describí brevemente lo ocurrido.  
-👉 Recibí la sugerencia de decisión basada en el historial VAR.")
+st.markdown(
+    "La plataforma inteligente para asistir en decisiones arbitrales mediante IA y análisis de jugadas.\n"
+    "👉 Subí una imagen, video o link de YouTube de la jugada.\n"
+    "👉 Describí brevemente lo ocurrido.\n"
+    "👉 Recibí la sugerencia de decisión basada en el historial VAR."
+)
 st.markdown("📖 [Ver Reglamento de Juego FIFA](https://digitalhub.fifa.com/m/799749e5f64c0f86/original/lnc9zjo8xf2j3nvwfazh-pdf.pdf)")
 st.markdown("---")
 
