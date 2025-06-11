@@ -12,3 +12,7 @@ joblib==1.2.0
 matplotlib==3.7.1
 fpdf==1.7.2
 numpy==1.23.5
+
+# Nuevas incorporaciones clave
+# Para asegurar compatibilidad al guardar y cargar modelo + vectorizador
+scipy==1.10.1
