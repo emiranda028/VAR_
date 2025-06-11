@@ -15,6 +15,10 @@ def cargar_y_entrenar():
     # Preprocesamiento
     df = df.dropna(subset=["descripcion", "Decision"])
     df = df[df["descripcion"].str.strip() != ""]
+    df = df[df["descripcion"].str.len() >= 5]
+    if df.empty:
+        st.error("El dataset no tiene descripciones válidas (mínimo 5 caracteres). Verificá el archivo CSV.")
+        st.stop()
     conteos = df["Decision"].value_counts()
     clases_validas = conteos[conteos >= 10].index.tolist()
     df = df[df["Decision"].isin(clases_validas)]
