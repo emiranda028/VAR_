@@ -77,7 +77,7 @@ if st.button("🔍 Predecir decisión"):
         st.subheader("🎞️ Contenido multimedia")
         if archivo:
             img = Image.open(archivo)
-            st.image(img, caption="Imagen subida", use_column_width=True)
+            st.image(img, caption="Imagen subida", use_container_width=True)
         if video:
             st.video(video)
         if link_youtube:
