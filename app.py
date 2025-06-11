@@ -12,7 +12,7 @@ vectorizador = joblib.load("vectorizador_var.pkl")
 le = joblib.load("label_encoder_var.pkl")
 
 # UI principal
-st.image("https://media.tenor.com/xOb4uwv-VV8AAAAC/var-checking.gif", use_column_width=True)
+st.image("https://media.tenor.com/xOb4uwv-VV8AAAAC/var-checking.gif", use_container_width=True)
 st.title("⚽ Bienvenido a VARGENTO - Asistente VAR Inteligente")
 st.markdown("""
 Subí una descripción textual de una jugada para que el sistema sugiera una decisión según el reglamento FIFA.
@@ -62,7 +62,7 @@ if st.button("🔍 Predecir decisión"):
                     st.video(archivo_subido)
                 elif archivo_subido.type.startswith("image"):
                     img = Image.open(archivo_subido)
-                    st.image(img, caption="Imagen de la jugada", use_column_width=True)
+                    st.image(img, caption="Imagen de la jugada", use_container_width=True)
 
             if link_youtube:
                 st.video(link_youtube)
@@ -73,5 +73,6 @@ if st.button("🔍 Predecir decisión"):
 # Pie de página
 st.markdown("---")
 st.markdown('<div style="text-align: center; color: gray;">Desarrollado por LTELC - Consultoría en Datos e IA ⚙️</div>', unsafe_allow_html=True)
+
 
 
