@@ -18,3 +18,11 @@ joblib==1.5.1
 fpdf==1.7.2
 Pillow==11.2.1
 scikit-learn==1.7.0
+streamlit==1.45.1
+pandas==2.3.0
+scikit-learn==1.7.0
+xgboost==2.0.3
+joblib==1.5.1
+fpdf==1.7.2
+python-dateutil==2.9.0.post0
+matplotlib==3.8.4
