@@ -17,8 +17,8 @@ st.title("⚽ Bienvenido a VARGENTO - Asistente VAR Inteligente")
 st.markdown("""
 Subí una descripción textual de una jugada para que el sistema sugiera una decisión según el reglamento FIFA.
 
-👉 También podés subir una imagen o video de la jugada.
-👉 O pegar el link de YouTube si lo tenés.
+👉 También podés subir una imagen o video de la jugada.  
+👉 O pegar el link de YouTube si lo tenés.  
 👉 Recibirás una sugerencia de decisión acompañada de la regla FIFA correspondiente.
 
 📖 [Ver Reglamento de Juego FIFA](https://digitalhub.fifa.com/m/799749e5f64c0f86/original/lnc9zjo8xf2j3nvwfazh-pdf.pdf)
@@ -73,6 +73,3 @@ if st.button("🔍 Predecir decisión"):
 # Pie de página
 st.markdown("---")
 st.markdown('<div style="text-align: center; color: gray;">Desarrollado por LTELC - Consultoría en Datos e IA ⚙️</div>', unsafe_allow_html=True)
-
-
-
