@@ -80,6 +80,54 @@ if st.button("🔍 Predecir decisión"):
             b64 = base64.b64encode(pdf_output.read()).decode('utf-8')
             href = f'<a href="data:application/octet-stream;base64,{b64}" download="reporte_var.pdf">📥 Descargar PDF</a>'
             st.markdown(href, unsafe_allow_html=True)
+import streamlit as st
+import pandas as pd
+import os
+
+st.set_page_config(page_title="Carga de Jugadas VAR", layout="centered")
+st.title("📋 Formulario de Carga de Jugadas VAR")
+
+st.markdown("Llená los campos con la información de una jugada arbitral para entrenar el sistema VARGENTO. Cada jugada que ingreses ayuda a mejorar la precisión del modelo.")
+
+# Campos del formulario
+with st.form("formulario_var"):
+    descripcion = st.text_area("Descripción de la jugada", placeholder="Ej: Jugador comete falta dentro del área")
+    decision = st.selectbox("Decisión arbitral", ["Penal", "No penal", "Gol válido", "Gol anulado", "Roja", "Amarilla", "Offside"])
+    tipo_infraccion = st.selectbox("Tipo de infracción", ["Foul", "Mano", "Offside", "Simulación", "Ninguna"])
+    minuto = st.number_input("Minuto del partido", min_value=0, max_value=120, value=45)
+    equipo_infractor = st.text_input("Equipo infractor")
+    equipo_victima = st.text_input("Equipo afectado")
+    jugador_infractor = st.text_input("Jugador infractor")
+    jugador_afectado = st.text_input("Jugador afectado")
+    confirmado_por_VAR = st.selectbox("¿Confirmado por VAR?", ["Sí", "No"])
+
+    submitted = st.form_submit_button("Guardar jugada")
+
+# Guardar en CSV
+archivo_csv = "VAR_dataset_ejemplo.csv"
+
+if submitted:
+    nueva_fila = pd.DataFrame([{
+        "descripcion": descripcion,
+        "decision": decision,
+        "tipo_infraccion": tipo_infraccion,
+        "minuto": minuto,
+        "equipo_infractor": equipo_infractor,
+        "equipo_victima": equipo_victima,
+        "jugador_infractor": jugador_infractor,
+        "jugador_afectado": jugador_afectado,
+        "confirmado_por_VAR": confirmado_por_VAR
+    }])
+
+    if os.path.exists(archivo_csv):
+        df_existente = pd.read_csv(archivo_csv)
+        df_actualizado = pd.concat([df_existente, nueva_fila], ignore_index=True)
+    else:
+        df_actualizado = nueva_fila
+
+    df_actualizado.to_csv(archivo_csv, index=False)
+    st.success("✅ Jugada guardada correctamente")
+    st.write(nueva_fila)
 
 st.markdown("---")
 st.markdown('<div class="footer">Desarrollado por LTELC - Consultoría en Datos e IA ⚙️</div>', unsafe_allow_html=True)
