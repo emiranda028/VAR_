@@ -1,117 +1,110 @@
 import streamlit as st
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import accuracy_score
-from xgboost import XGBClassifier
 import plotly.express as px
-from PIL import Image
+from fpdf import FPDF
 import io
 import base64
-from fpdf import FPDF
+from PIL import Image
 
-st.set_page_config(page_title="VARGENTO - Análisis VAR", layout="wide")
+st.set_page_config(page_title="VARGENTO - Análisis VAR Inteligente", layout="wide")
 
-st.markdown("""
-<style>
-    .big-font { font-size:30px !important; font-weight: bold; color: #003366; }
-    .medium-font { font-size:20px !important; color: #444; }
-    .footer { text-align: center; color: gray; margin-top: 50px; font-size: 13px; }
-</style>
-""", unsafe_allow_html=True)
+st.markdown(
+    """
+    <style>
+    .block-container {
+        padding-top: 1rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-st.markdown('<div class="big-font">⚽ VARGENTO - Análisis Inteligente de Jugadas VAR</div>', unsafe_allow_html=True)
-st.markdown('<div class="medium-font">Subí una jugada, escribí la descripción y recibí la sugerencia del sistema.</div>', unsafe_allow_html=True)
-st.markdown("---")
+st.title("⚽ VARGENTO - Plataforma Inteligente de Análisis VAR")
+st.markdown("Bienvenido a la plataforma de análisis de jugadas de fútbol con IA.")
 
-archivo = st.file_uploader("📂 Subí el archivo CSV (debe tener columnas 'descripcion' y 'Decision')", type="csv")
-
-@st.cache_data
-def entrenar_modelo(df):
+@st.cache_resource
+def cargar_y_entrenar():
+    df = pd.read_csv("VAR_Limpio_Generado.csv")
     df = df.dropna(subset=["descripcion", "Decision"])
-    df = df[df["descripcion"].str.len() > 5]
-    conteo = df["Decision"].value_counts()
-    clases_validas = conteo[conteo >= 10].index.tolist()
-    df = df[df["Decision"].isin(clases_validas)]
+    df = df[df["descripcion"].str.strip() != ""]
+    df = df[df["Decision"].str.strip() != ""]
 
-    if len(df["Decision"].unique()) < 2:
-        st.error("❌ Se requieren al menos 2 clases válidas.")
-        st.stop()
+    le = LabelEncoder()
+    df["Decision_encoded"] = le.fit_transform(df["Decision"])
 
     vectorizador = CountVectorizer()
     X = vectorizador.fit_transform(df["descripcion"])
+    y = df["Decision_encoded"]
 
-    le = LabelEncoder()
-    y = le.fit_transform(df["Decision"])
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-
-    modelo = XGBClassifier(use_label_encoder=False, eval_metric="mlogloss")
+    modelo = MultinomialNB()
     modelo.fit(X_train, y_train)
-
     y_pred = modelo.predict(X_test)
     acc = accuracy_score(y_test, y_pred)
 
-    return modelo, vectorizador, le, acc, df
+    st.success(f"✅ Modelo entrenado con precisión: {acc*100:.2f}%")
 
-if archivo is not None:
-    df = pd.read_csv(archivo)
-    if "descripcion" not in df.columns or "Decision" not in df.columns:
-        st.error("❌ El CSV debe tener columnas llamadas 'descripcion' y 'Decision'.")
+    return modelo, vectorizador, le, df
+
+modelo, vectorizador, le, df_filtrado = cargar_y_entrenar()
+
+st.markdown("---")
+
+st.header("📸 Subí una jugada para analizar")
+descripcion = st.text_area("Describí la jugada:", "")
+archivo = st.file_uploader("Subí una imagen (opcional):", type=["png", "jpg", "jpeg"])
+video = st.file_uploader("Subí un video (opcional):", type=["mp4"])
+link_youtube = st.text_input("O pegá un link de YouTube (opcional):")
+
+if st.button("🔍 Predecir decisión"):
+    if not descripcion.strip():
+        st.warning("Por favor, ingresá una descripción.")
     else:
-        modelo, vectorizador, le, acc, df_train = entrenar_modelo(df)
-        st.success(f"✅ Modelo entrenado con {len(df_train)} jugadas - Precisión: {acc*100:.2f}%")
+        X_nueva = vectorizador.transform([descripcion])
+        probs = modelo.predict_proba(X_nueva)[0]
+        prediccion_idx = probs.argmax()
+        prediccion = le.inverse_transform([prediccion_idx])[0]
+        probabilidad = probs[prediccion_idx] * 100
 
-        st.markdown("## 🎬 Ingresá una nueva jugada")
-        descripcion = st.text_area("📝 Describí la jugada", "Jugador comete falta dentro del área...")
-        archivo_media = st.file_uploader("📸 Subí una imagen o video (opcional)", type=["jpg", "png", "jpeg", "mp4"])
-        youtube_link = st.text_input("🔗 Link de YouTube (opcional)")
+        st.success(f"📢 Decisión sugerida: **{prediccion}** ({probabilidad:.2f}% confianza)")
 
-        if st.button("🔍 Predecir decisión"):
-            if descripcion.strip() == "":
-                st.warning("Ingresá una descripción válida.")
-            else:
-                X_nueva = vectorizador.transform([descripcion])
-                proba = modelo.predict_proba(X_nueva)[0]
-                pred = modelo.predict(X_nueva)[0]
-                decision = le.inverse_transform([pred])[0]
-                confianza = proba[pred] * 100
-                st.success(f"📢 Decisión sugerida: **{decision}** ({confianza:.2f}% de confianza)")
+        st.subheader("🎞️ Contenido multimedia")
+        if archivo:
+            img = Image.open(archivo)
+            st.image(img, caption="Imagen subida", use_column_width=True)
+        if video:
+            st.video(video)
+        if link_youtube:
+            st.video(link_youtube)
 
-                st.markdown("#### 📊 Detalle de probabilidades")
-                df_prob = pd.DataFrame({
-                    "Decisión": le.inverse_transform(range(len(proba))),
-                    "Probabilidad (%)": proba * 100
-                })
-                fig = px.bar(df_prob, x="Decisión", y="Probabilidad (%)", title="Distribución de probabilidades")
-                st.plotly_chart(fig)
+        st.subheader("📄 Exportar a PDF")
+        if st.button("📥 Descargar reporte PDF"):
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            texto_pdf = f"""Jugada: {descripcion}
 
-                if archivo_media:
-                    if archivo_media.type.startswith("image"):
-                        st.image(Image.open(archivo_media), caption="Imagen de la jugada", use_column_width=True)
-                    elif archivo_media.type.startswith("video"):
-                        st.video(archivo_media)
-                elif youtube_link:
-                    st.video(youtube_link)
+Decisión sugerida: {prediccion}
 
-                # PDF
-                if st.button("📄 Descargar reporte PDF"):
-                    pdf = FPDF()
-                    pdf.add_page()
-                    pdf.set_font("Arial", size=12)
-                    pdf.multi_cell(0, 10, f"Jugada: {descripcion}
+Probabilidad: {probabilidad:.2f}%"""
+            pdf.multi_cell(0, 10, texto_pdf)
 
-Decisión sugerida: {decision}
-Confianza: {confianza:.2f}%")
-                    pdf_output = io.BytesIO()
-                    pdf.output(pdf_output)
-                    pdf_output.seek(0)
-                    b64 = base64.b64encode(pdf_output.read()).decode('utf-8')
-                    href = f'<a href="data:application/octet-stream;base64,{b64}" download="reporte_var.pdf">📥 Descargar PDF</a>'
-                    st.markdown(href, unsafe_allow_html=True)
+            pdf_output = io.BytesIO()
+            pdf.output(pdf_output)
+            pdf_output.seek(0)
+            b64 = base64.b64encode(pdf_output.read()).decode('utf-8')
+            href = f'<a href="data:application/octet-stream;base64,{b64}" download="reporte_var.pdf">📄 Descargar PDF</a>'
+            st.markdown(href, unsafe_allow_html=True)
 
-        st.markdown("### 📈 Distribución de decisiones en el dataset")
-        st.bar_chart(df_train["Decision"].value_counts())
+st.markdown("---")
+st.subheader("📊 Visualización de decisiones en el dataset")
+fig = px.histogram(df_filtrado, x="Decision", title="Distribución de decisiones")
+st.plotly_chart(fig)
 
-        st.markdown('<div class="footer">Desarrollado por LTELC - Consultoría en Datos e IA ⚙️</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align: center; color: gray;">Desarrollado por LTELC - Consultoría en Datos e IA ⚙️</div>', unsafe_allow_html=True)
