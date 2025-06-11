@@ -5,4 +5,3 @@ xgboost
 fpdf
 plotly
 Pillow
-xgboost==1.7.6
