@@ -1,6 +1,7 @@
 import streamlit as st
 import joblib
 import numpy as np
+from PIL import Image
 
 # Configurar página (esto debe ir primero)
 st.set_page_config(page_title="Predicción VAR", layout="centered")
@@ -11,11 +12,22 @@ vectorizador = joblib.load("vectorizador_var.pkl")
 le = joblib.load("label_encoder_var.pkl")
 
 # UI principal
-st.title("⚽ Predicción automática de decisiones VAR")
-st.markdown("Subí una descripción textual de una jugada para que el sistema sugiera una decisión según el reglamento FIFA")
+st.image("https://media.tenor.com/xOb4uwv-VV8AAAAC/var-checking.gif", use_column_width=True)
+st.title("⚽ Bienvenido a VARGENTO - Asistente VAR Inteligente")
+st.markdown("""
+Subí una descripción textual de una jugada para que el sistema sugiera una decisión según el reglamento FIFA.
 
-# Input del usuario
+👉 También podés subir una imagen o video de la jugada.
+👉 O pegar el link de YouTube si lo tenés.
+👉 Recibirás una sugerencia de decisión acompañada de la regla FIFA correspondiente.
+
+📖 [Ver Reglamento de Juego FIFA](https://digitalhub.fifa.com/m/799749e5f64c0f86/original/lnc9zjo8xf2j3nvwfazh-pdf.pdf)
+""")
+
+# Inputs del usuario
 descripcion = st.text_area("📝 Describí la jugada con claridad")
+archivo_subido = st.file_uploader("📎 Subí imagen o video (opcional):", type=["jpg", "jpeg", "png", "mp4"])
+link_youtube = st.text_input("📺 Pegá link de YouTube (opcional):")
 
 # Predicción
 if st.button("🔍 Predecir decisión"):
@@ -43,10 +55,23 @@ if st.button("🔍 Predecir decisión"):
 
             if decision in reglas:
                 st.info(f"📘 Según el reglamento FIFA: {reglas[decision]}")
+
+            # Mostrar multimedia
+            if archivo_subido:
+                if archivo_subido.type.startswith("video"):
+                    st.video(archivo_subido)
+                elif archivo_subido.type.startswith("image"):
+                    img = Image.open(archivo_subido)
+                    st.image(img, caption="Imagen de la jugada", use_column_width=True)
+
+            if link_youtube:
+                st.video(link_youtube)
+
         except Exception as e:
             st.error(f"❌ Error en la predicción: {e}")
 
 # Pie de página
 st.markdown("---")
 st.markdown('<div style="text-align: center; color: gray;">Desarrollado por LTELC - Consultoría en Datos e IA ⚙️</div>', unsafe_allow_html=True)
+
 
