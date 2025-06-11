@@ -2,70 +2,69 @@ import streamlit as st
 import pandas as pd
 import joblib
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.metrics import accuracy_score
-import base64
+from sklearn.preprocessing import LabelEncoder
+import numpy as np
 
-st.set_page_config(page_title="VARGENTO - Análisis VAR", layout="centered")
-st.title("⚽ VARgento: Asistente de Decisiones Arbitrales")
+# Configuración de la página (debe ser lo primero)
+st.set_page_config(page_title="VARGENTO ⚽️", layout="wide")
 
-st.markdown("""
-Bienvenido a **VARGENTO**, un sistema de predicción de decisiones arbitrales basado en inteligencia artificial.
-Subí una jugada, describila y obtené:
-- Una decisión sugerida
-- El porcentaje de confianza
-- La regla FIFA relacionada
+# Cargar modelo, vectorizador y encoder
+@st.cache_resource
+def cargar_componentes():
+    modelo = joblib.load("modelo_var_nb.pkl")
+    vectorizador = joblib.load("vectorizador.pkl")
+    le = joblib.load("label_encoder.pkl")
+    return modelo, vectorizador, le
 
-🟢 *Buscamos reducir la discrecionalidad arbitral en el fútbol profesional.*
-""")
+modelo, vectorizador, le = cargar_componentes()
 
-st.markdown("---")
+# Estilo y título principal
+st.title("📺 VARGENTO - Sistema de asistencia arbitral")
+st.markdown("Bienvenido a la demo del modelo de predicción de decisiones arbitrales en jugadas de fútbol. ⚽️")
+st.markdown("👉 Subí una imagen, video o link de YouTube de la jugada. Luego describila en texto y obtené una decisión sugerida por el sistema.")
 
-st.subheader("📸 Subí imagen, video o link de la jugada")
-st.file_uploader("Imagen o video de la jugada", type=["jpg", "jpeg", "png", "mp4"])
-link = st.text_input("Link de YouTube de la jugada")
+# Inputs multimedia
+col1, col2 = st.columns(2)
 
-# Cargar datos y entrenar modelo
-@st.cache_data
-def cargar_y_entrenar():
-    df = pd.read_csv("jugadas_var_sinteticas.csv", encoding="utf-8-sig")
-    df = df.dropna(subset=["descripcion", "decision"])
+with col1:
+    imagen = st.file_uploader("📷 Subí una imagen de la jugada", type=["png", "jpg", "jpeg"])
+    if imagen:
+        st.image(imagen, caption="Jugada cargada", use_container_width=True)
 
-    vectorizador = CountVectorizer()
-    X = vectorizador.fit_transform(df["descripcion"])
-    y = df["decision"]
+with col2:
+    video_link = st.text_input("📹 Link de YouTube de la jugada")
+    if video_link:
+        st.video(video_link)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Input de texto descriptivo
+descripcion = st.text_area("📝 Descripción de la jugada:", placeholder="Ejemplo: Mano dentro del área tras rebote")
 
-    modelo = MultinomialNB()
-    modelo.fit(X_train, y_train)
-
-    acc = accuracy_score(y_test, modelo.predict(X_test))
-    return modelo, vectorizador, acc, df
-
-modelo, vectorizador, acc, df_data = cargar_y_entrenar()
-
-st.markdown(f"### 🎯 Precisión del modelo: {acc*100:.2f}%")
-
-st.subheader("📝 Describí la jugada")
-descripcion = st.text_area("Ejemplo: 'El defensor salta con el brazo extendido e impacta el balón dentro del área'.")
-
-if st.button("📊 Predecir decisión"):
-    if descripcion:
-        X_nueva = vectorizador.transform([descripcion])
-        pred = modelo.predict(X_nueva)[0]
-        proba = max(modelo.predict_proba(X_nueva)[0]) * 100
-
-        # Buscar regla relacionada
-        fila = df_data[df_data["decision"] == pred].iloc[0]
-        regla = fila["regla_fifa"]
-
-        st.success(f"✅ Decisión sugerida: **{pred}**")
-        st.info(f"📈 Confianza del modelo: {proba:.2f}%")
-        st.markdown(f"📘 **Reglamento FIFA relacionado:** {regla}")
+if st.button("🔍 Predecir decisión"):
+    if descripcion.strip() == "":
+        st.warning("Por favor, ingresá una descripción válida de la jugada.")
     else:
-        st.warning("Por favor, escribí una descripción para predecir la decisión.")
+        descripcion_vectorizada = vectorizador.transform([descripcion])
+        pred_proba = modelo.predict_proba(descripcion_vectorizada)[0]
+        pred_idx = np.argmax(pred_proba)
+        decision = le.inverse_transform([pred_idx])[0]
+        confianza = pred_proba[pred_idx] * 100
+
+        st.success(f"🧠 Decisión sugerida: **{decision}** ({confianza:.2f}% de confianza)")
+
+        # Buscar referencia al reglamento FIFA según la decisión
+        referencias = {
+            "Penal": "Regla 12 - Faltas y conducta incorrecta (Infracciones dentro del área)",
+            "Roja": "Regla 12 - Conducta violenta o juego brusco grave",
+            "Amarilla": "Regla 12 - Conducta antideportiva",
+            "Gol anulado": "Regla 11 - Fuera de juego o mano previa",
+            "Gol válido": "Regla 10 - Gol marcado correctamente",
+            "No penal": "Regla 12 - Contacto legal o sin infracción",
+            "Offside": "Regla 11 - Posición de fuera de juego"
+        }
+
+        if decision in referencias:
+            st.info(f"📘 Referencia al reglamento FIFA: {referencias[decision]}")
 
 st.markdown("---")
-st.markdown("Desarrollado por **LTELC - Consultoría en Datos e IA** ⚙️")
+st.markdown("<div style='text-align: center; color: gray;'>Desarrollado por LTELC - Consultoría en Datos e IA ⚙️</div>", unsafe_allow_html=True)
+
