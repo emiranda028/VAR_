@@ -1,10 +1,11 @@
 import streamlit as st
+
+# ✅ La primera línea debe ser la configuración de página
+st.set_page_config(page_title="Predicción VAR", layout="centered")
+
 import joblib
 import numpy as np
 from PIL import Image
-
-# Configurar página (esto debe ir primero)
-st.set_page_config(page_title="Predicción VAR", layout="centered")
 
 # Cargar modelo y recursos
 modelo = joblib.load("modelo_var_nb.pkl")
